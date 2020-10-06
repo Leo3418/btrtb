@@ -1,0 +1,6 @@
+[Unit]
+Description=Upload Snapper Snapshots via SSH
+
+[Service]
+Type=simple
+ExecStart=/usr/local/libexec/btrtb/btrtb-upload

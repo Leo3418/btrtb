@@ -1,0 +1,12 @@
+#!/usr/bin/python3
+
+import sys
+
+if __name__ != '__main__':
+    sys.stderr.write('btrtb-upload must not be imported')
+    exit(1)
+
+from btrtb.upload import *
+
+for config in get_snapper_configs():
+    upload(snapper_config=config)
