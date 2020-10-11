@@ -31,14 +31,14 @@ following programs:
 ## Files Required to Run This Program
 
 - `btrtb/*.py`: Python files for the program itself
-- `etc/systemd/*`: systemd unit files which automates runs of this program
+- `etc/systemd/*`: systemd unit files which automate runs of this program
 - `libexec/btrtb-upload`: The entry point to this program
 
 ## Installation Instructions
 
 `btrtb` only needs to be installed on the *local machine*.  No files for this
 program need to be installed on the remote machine.  Thus, the following steps
-should be performed on the backup source.
+should be performed on the local machine.
 
 1. Find the path to the `site-packages` directory for Python on the backup
    source.  Usually, it is `/usr/lib/python3.x/site-packages`, where `x` is the
