@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+
+#  btrtb Main Executable Script
+#
+#  Copyright (C) 2020-2021 Leo <https://github.com/Leo3418>
+#
+#  This file is part of btrtb, a tool for automating transfers of Btrfs
+#  snapshots via SSH.
+#
+#  btrtb is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  btrtb is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with btrtb.  If not, see <https://www.gnu.org/licenses/>.
+
+if __name__ != '__main__':
+    import sys
+    sys.stderr.write("bin/btrtb must not be imported")
+    sys.exit(1)
+
+
+import getopt
+import importlib
+import os
+import sys
+
+# Program global options
+# For more details, please refer to documentation for Python's 'getopt' module
+
+"""A string of option letters that this program recognizes."""
+SHORT_OPTS = 'c:h'
+"""A list of names of the long options this program supports."""
+LONG_OPTS = ('config=', 'help')
+
+# Sub-level commands
+
+"""A list of this program's commands."""
+COMMANDS = (
+    'create-config',
+    'list-configs',
+    'delete-config',
+    'upload',
+    'list',
+    'cleanup',
+    'sync'
+)
+"""A dictionary that maps command aliases to their original command names."""
+CMD_ALIASES = {
+    'ls': 'list'
+}
+
+
+def usage(prog_name: str, status: int) -> None:
+    """
+    Display the help for this program, and then exit with the specified status.
+    :param prog_name: The program's name shown in the help text.
+    :param status: The exit status.
+    """
+    if status != 0:
+        sys.stderr.write(f"Try '{prog_name} --help' for more information\n")
+    else:
+        print(f"""\
+Usage: {prog_name} [GLOBAL OPTION]... COMMAND [COMMAND ARGUMENT]...
+Manage remote backups of Btrfs snapshots created by snapper(8).
+
+Global options:
+    -c, --config=CONFIG     use Snapper configuration with name CONFIG
+    -h, --help              display this help and exit
+
+Commands:
+    create-config   let this program start managing the configuration
+    list-configs    list configurations managed by this program
+    delete-config   stop this program managing the configuration
+    upload          upload snapshot(s)
+    list, ls        list remote snapshots
+    cleanup         clean up remote snapshot(s)
+    sync            upload new snapshots and clean up old ones
+Please see '{prog_name} COMMAND --help' for specialized usage of each COMMAND.\
+""")
+
+    sys.exit(status)
+
+
+def main(argv: list) -> None:
+    prog_name = argv[0]
+    try:
+        opts, args = getopt.getopt(argv[1:], SHORT_OPTS, LONG_OPTS)
+    except getopt.GetoptError as err:
+        sys.stderr.write(f"{prog_name}: {err}\n")
+        usage(prog_name, 2)
+        raise err
+
+    prog_opts = dict()
+    for opt, arg in opts:
+        if opt in ('-c', '--config'):
+            prog_opts['config'] = arg
+        elif opt in ('-h', '--help'):
+            usage(prog_name, 0)
+
+    if len(args) == 0:
+        sys.stderr.write(f"{prog_name}: no command specified\n")
+        usage(prog_name, 2)
+    cmd_name = args[0]
+    cmd_args = args[1:]
+
+    if cmd_name in CMD_ALIASES:
+        # Replace command alias with original command name
+        cmd_name = CMD_ALIASES[cmd_name]
+    if cmd_name not in COMMANDS:
+        sys.stderr.write(f"{prog_name}: command '{cmd_name}' not recognized\n")
+        usage(prog_name, 2)
+    cmd_module = importlib.import_module(f'btrtb.cli.{cmd_name}')
+    # Hand over program execution to the module dedicated for the command
+    cmd_module.main(prog_name, prog_opts, cmd_name, cmd_args)
+
+
+if __name__ == '__main__':
+    main(sys.argv)
