@@ -42,12 +42,22 @@ DEFAULT_SUBVOL_CONFIG = {
     'mv-command-remote': 'sudo mv'
 }
 
-# Create the program configuration file on the first run or after the old
-# configuration file has been deleted
+# Create the directory of configuration files for this program if needed
+if os.path.isfile(CONFIG_PATH):
+    raise FileExistsError(f"cannot create new directory at {CONFIG_PATH} "
+                          f"because the path is an existing file; please "
+                          f"remove the file and try again")
+if not os.path.isdir(CONFIG_PATH):
+    os.mkdir(CONFIG_PATH)
+
+# Create the program configuration file if needed
 __program_config_file_abs_path = f'{CONFIG_PATH}/{PROGRAM_CONFIG_FILE}'
-if not os.path.exists(__program_config_file_abs_path):
-    if not os.path.isdir(CONFIG_PATH):
-        os.mkdir(CONFIG_PATH)
+if os.path.isdir(__program_config_file_abs_path):
+    raise FileExistsError(f"cannot create new file at "
+                          f"{__program_config_file_abs_path} because the path "
+                          f"is an existing directory; please remove the "
+                          f"directory and try again")
+if not os.path.isfile(__program_config_file_abs_path):
     json.dump(DEFAULT_PROGRAM_CONFIG,
               open(__program_config_file_abs_path, 'w'),
               indent=4)
