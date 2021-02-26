@@ -1,6 +1,6 @@
 #  helpers.py: Helper functions that can be reused in many parts of btrtb.
 #
-#  Copyright (C) 2020 Leo <https://github.com/Leo3418>
+#  Copyright (C) 2020-2021 Leo <https://github.com/Leo3418>
 #
 #  This file is part of btrtb, a tool for automating transfers of Btrfs
 #  snapshots via SSH.
@@ -28,23 +28,28 @@ TIMESTAMP_FORMAT = '%Y-%m-%d_%H:%M:%S'
 
 
 def get_remote_snapshot_path_from_datetime(
-        snapper_config: str = 'root',
+        subvol_config: str,
         dt: datetime = datetime.now(timezone.utc)
 ) -> str:
     """
     Return a snapshot path that contains a timestamp, which can be used on the
     remote host.
 
-    :param snapper_config: The name of Snapper configuration whose snapshot is
-        concerned. Default value is 'root'.
+    :param subvol_config: The name of subvolume configuration whose snapshot is
+        concerned.
     :param dt: The date and time, used for the snapshot's timestamp. Default
         value is the current UTC date and time, rather than the local time, so
         timestamps will still be consistent when the local timezone changes.
     :return: A string for the absolute path of the remote snapshot, for the
-        specified Snapper configuration, at the specified date and time.
+        specified subvolume configuration, at the specified date and time.
+    :raise ValueError: If the specified subvolume configuration does not exist.
     """
+    config_json = get_subvol_config(subvol_config)
     return '{}/{}/{}'.format(
-        REMOTE_BACKUP_PATH, snapper_config, dt.strftime(TIMESTAMP_FORMAT))
+        config_json['remote-backup-path'],
+        subvol,
+        dt.strftime(TIMESTAMP_FORMAT)
+    )
 
 
 def get_datetime_from_remote_snapshot_path(path: str) -> datetime:
@@ -67,22 +72,27 @@ def get_datetime_from_remote_snapshot_path(path: str) -> datetime:
         .replace(tzinfo=timezone.utc)
 
 
-def get_remote_snapshot_list(snapper_config: str = 'root') -> list:
+def get_remote_snapshot_list(subvol_config: str) -> list:
     """
     Get the list of snapshots on the remote host.
 
-    :param snapper_config: The name of Snapper configuration whose snapshot is
-        concerned. Default value is 'root'.
-    :return: The list of remote snapshots for the specified Snapper
+    :param subvol_config: The name of subvolume configuration whose snapshot is
+        concerned.
+    :return: The list of remote snapshots for the specified subvolume
         configuration. Each element in the list can be passed in as the
         argument to the 'get_datetime_from_remote_snapshot_path' for getting
         its associated date and time.
+    :raise ValueError: If the specified subvolume configuration does not exist.
     :raise CalledProcessError: If the process for getting the remote snapshot
         list gets a non-zero exit code.
     """
+    config_json = get_subvol_config(subvol_config)
+    ssh = config_json['ssh-command']
+    remote_host = config_json['remote-host']
+    ls = config_json['ls-command-remote']
+    remote_backup_path = config_json['remote-backup-path']
     proc = subprocess.run(
-        f'{SSH} {REMOTE_HOST} {LS_REMOTE} -1 '
-        f'{REMOTE_BACKUP_PATH}/{snapper_config}',
+        f'{ssh} {remote_host} {ls} -1 {remote_backup_path}/{subvol_config}',
         capture_output=True,
         shell=True,
         check=True

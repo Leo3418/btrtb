@@ -9,4 +9,4 @@ if __name__ != '__main__':
 from btrtb.upload import *
 
 for config in get_snapper_configs():
-    upload(snapper_config=config)
+    upload(subvol_config=config)
